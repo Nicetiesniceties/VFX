@@ -11,7 +11,7 @@ import random as rd
 import matplotlib.pyplot as plt
 
 
-# In[106]:
+# In[215]:
 
 
 def readImages(directory):
@@ -127,7 +127,7 @@ test1, test2 = compute_bitmap(test)
 plt.imshow(test1, cmap = "gray")
 
 
-# In[5]:
+# In[183]:
 
 
 def sampleZ(images_1c, MAX_intensity):
@@ -135,11 +135,11 @@ def sampleZ(images_1c, MAX_intensity):
     intensity_range = MAX_intensity + 1
     Z = np.zeros((intensity_range, len(images)), dtype = int)
     # src_img = images[rd.randrange(len(images))]
-    src_img = images[len(images) // 2]
+    src_img = images[0]
     for intensity in range(intensity_range):
         rows, cols = np.where(src_img == intensity)
         if(len(rows) == 0):
-            rows, cols = np.where(images[len(images) // 2 + 1] == intensity)
+            rows, cols = np.where(images[1] == intensity)
             if(len(rows) == 0):
                 continue
         idx = rd.randrange(len(rows))
@@ -168,7 +168,7 @@ def intensity_weighting(pix_value, MAX_intensity):
     return(min(pix_value, MAX_intensity - pix_value))
 
 
-# In[8]:
+# In[231]:
 
 
 def intensityAdjustment(image, template):
@@ -254,7 +254,7 @@ def gammaToneMapping(image):
     return image_corrected
 
 
-# In[12]:
+# In[228]:
 
 
 #import numpy as np
@@ -351,7 +351,7 @@ def bilateral_func(input_image):
     log_abs_scale = np.max(log_base) * compressionfactor
     print('log absolute scale', log_abs_scale)
     log_output = log_base * compressionfactor + log_detail# - log_abs_scale
-    axes[1][1].imshow(Image.fromarray(np.exp(log_output)))
+    axes[1][1].imshow(Image.fromarray(np.exp(log_output)), cmap = "spring")
     print('log output', log_output)
     R_out = r * np.exp(log_output)
     G_out = g * np.exp(log_output)
@@ -360,7 +360,7 @@ def bilateral_func(input_image):
     return [R_out, B_out, G_out]#np.concatenate((R_out, G_out, B_out), axis = 2)
 
 
-# In[146]:
+# In[229]:
 
 
 # if RadMap hasn't been calculated, send RadMap = []
@@ -376,6 +376,8 @@ def CreateHdrImage(images_rgb, MAX_intensity, shutter_times, WeightedIntensity, 
     #RespCurve = [-1 * curve for curve in RespCurve]
     for curve in RespCurve:
         plt.plot(curve)
+    plt.legend()
+    plt.title("Response Curve")
     plt.show()
     # Calculate Radiance Map if RadMap is an empty list
     if len(RadMap) == 0:
@@ -397,7 +399,7 @@ def CreateHdrImage(images_rgb, MAX_intensity, shutter_times, WeightedIntensity, 
     return result_image, RadMap
 
 
-# In[30]:
+# In[154]:
 
 
 # balcony_times = np.array([1/400, 1/250, 1/100, 1/40, 1/25, 1/8, 1/3], dtype = float)
@@ -409,17 +411,19 @@ def CreateHdrImage(images_rgb, MAX_intensity, shutter_times, WeightedIntensity, 
 # living_room_times = np.array([1/160, 1/125, 1/80, 1/60, 1/40, 1/15], dtype = float)
 
 
-# In[147]:
+# In[230]:
 
 
 if __name__ == "__main__":
-    images, images_rgb = readImages("testing_images/View2")
+    images, images_rgb = readImages("testing_images/View1")
     show_images(images)
     # living_room_times = np.array([1/160, 1/125, 1/80, 1/60, 1/40, 1/15], dtype = float)
     view_2_times = np.array([1, 10, 15, 1 / 10, 1 / 25, 
                              1 / 5, 1 / 50, 2.5, 20, 5])
-    # view_1_times = np.array([1, 10, 15, 1 / 10, 1 / 2.5, 1 / 25, 
-    #                          1 / 5, 20, 5])
+    view_1_times = np.array([1, 10, 15, 1 / 10, 1 / 2.5, 1 / 25, 
+                             1 / 5, 20, 5])
+    complete_view_1_times = np.array([1, 20, 15, 1/10, 1/100, 1/125, 1/160, 1/2.5, 1/25, 
+                                     1/250, 1/400, 1/5, 1/50, 1/80, 1/800, 20, 25, 5])
     #test_times = np.array([60, 80, 100, 125, 160, 200, 250, 320, 400, 500, 800, 1250, 2000, 3200], dtype = float)
     #test_times = test_times[::-1]
     #living_room_times = np.array([32, 16, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.15625, 0.0078125, 0.00390625, 0.001953125, 0.0009765265], dtype = float)
@@ -428,12 +432,16 @@ if __name__ == "__main__":
     result_image, RadianceMap = CreateHdrImage(
                                    images_rgb, 
                                    MAX_intensity = 255, 
-                                   shutter_times = np.log(view_2_times),#test_times[-10: -1], 
+                                   shutter_times = np.log(view_1_times),#test_times[-10: -1], 
                                    WeightedIntensity = intensity_weighting, 
                                    ToneMappingFunction = gammaToneMapping, 
-                                   RadMap = []
+                                   RadMap = RadianceMap
                                 )
-    cv2.imwrite("result_images/view 2 test tone mapping.png", result_image)
+    for i in tqdm(range(len(result_image))):
+        for j in range(len(result_image[0])):
+            if(result_image[i][j][0] > 230):
+                result_image[i][j][1]  = result_image[i][j][2] = result_image[i][j][0]
+    cv2.imwrite("result_images/view 1 255 tone mapping.png", result_image)
 
 
 # In[55]:
@@ -442,20 +450,24 @@ if __name__ == "__main__":
 np.exp(np.max(RadianceMap))
 
 
-# In[148]:
+# In[220]:
 
 
-plt.imshow(cv2.normalize(np.exp(RadianceMap[0]), np.array([]), alpha=0, beta=255, norm_type=cv2.NORM_MINMAX), 
-           origin="lower", cmap='Spectral', interpolation='nearest')
+# plt.imshow(cv2.normalize(np.exp(RadianceMap[0]), np.array([]), alpha=0, beta=255, norm_type=cv2.NORM_MINMAX), 
+#            origin="lower", cmap='Spectral', interpolation='nearest')
+plt.imshow(RadianceMap[0], 
+           origin="lower", cmap='autumn', interpolation='nearest')
+plt.gca().invert_yaxis()
 plt.colorbar()
 plt.savefig("result_images/Rmap2.png")
 plt.show()
 
 
-# In[104]:
+# In[196]:
 
 
-get_ipython().system('rm testing_images/View1/.DS_Store')
+for i in range(3):
+    RadianceMap[i] = np.clip(RadianceMap[i], -10, 0)
 
 
 # In[ ]:
