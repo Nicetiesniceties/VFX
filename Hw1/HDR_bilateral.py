@@ -38,6 +38,57 @@ def readImages(directory):
     images_r, images_g, images_b = np.array(images_r), np.array(images_g), np.array(images_b)
     return images, images_rgb
 
+# In[182]:
+
+
+def MLT_alignment(images, template):
+    def compute_greyvalue(img_rgb):
+        grey_img = np.zeros(img_rgb[0].shape)
+        grey_img = (54 * img_rgb[0] + 183 * img_rgb[1] + 19 * img_rgb[2]) / 256
+        return grey_img
+    def compute_bitmap(grey_img):
+        threshold = np.median(grey_img)
+        tb, eb = np.zeros(grey_img.shape), np.zeros(grey_img.shape)
+        for i in range(len(grey_img)):
+            for j in range(len(grey_img[0])):
+                if(abs(grey_img[i][j] - threshold) < 10):
+                    eb[i][j] = 0
+                if(grey_img[i][j] > threshold):
+                    tb[i][j] = 1
+        return tb, eb
+    def GetExpShift(img1, img2, shift_count):
+        # min_err, cur_shift[2]
+        tb1, eb1 = compute_bitmap(img1)
+        tb2, eb2 = compute_bitmap(img2)
+        if(shift_count > 0):
+            sml_img1 = cv2.resize(img1, (0,0), fx=0.5, fy=0.5) 
+            sml_img2 = cv2.resize(img2, (0,0), fx=0.5, fy=0.5)
+            cur_shift = GetExpShift(sml_img1, sml_img2, shift_bits - 1)
+            cur_shift[0] *= 2
+            cur_shift[1] *= 2
+        else:
+            cur_shift[0] = cur_shift[1] = 0
+        min_err = len(img1) * len(img1[0])
+        for i in range(len(img1)):
+            for j in range(len(img1[0])):
+                xs = cur_shift[0] + i;
+                ys = cur_shift[1] + j;
+                shifted_tb2 = np.zeros(img1.shape)
+                shifted_eb2 = np.zeros(img1.shape)
+                M = np.float32([[1,0, xs],[0,1,ys]])
+                shifted_tb2 = cv2.warpAffine(tb2 ,M, img1.shape)
+                shifted_eb2 = cv2.warpAffine(eb2 ,M, img1.shape)
+                
+                diff_b = np.logical_xor(tb1, shifted_tb2)
+                diff_b = np.logical_and(diff_b, eb1)
+                diff_b = np.logical_and(diff_b, shifted_eb2)
+                err = np.sum(diff_b);
+                if (err < min_err):
+                    shift_ret[0] = xs;
+                    shift_ret[1] = ys;
+                    min_err = err;
+        return shift_ret
+
 # In[183]:
 
 
