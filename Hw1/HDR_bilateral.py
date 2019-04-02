@@ -28,7 +28,7 @@ def readImages(directory):
     alignMTB = cv2.createAlignMTB()
     alignMTB.process(images, images)
     for img in images:
-        img = cv2.resize(img, (0,0), fx=0.2, fy=0.2) 
+        img = cv2.resize(img, (0,0), fx=1.0, fy=1.0) 
         b, g, r = cv2.split(img)
         images_r.append(np.array(r))
         images_g.append(np.array(b))
@@ -37,95 +37,6 @@ def readImages(directory):
         # images_rgb.append(cv2.cvtColor(images[-1], cv2.COLOR_BGR2RGB))
     images_r, images_g, images_b = np.array(images_r), np.array(images_g), np.array(images_b)
     return images, images_rgb
-
-
-# In[3]:
-
-
-def MLT_alignment():
-    def compute_greyvalue(img_rgb):
-        grey_img = np.zeros(img_rgb[0].shape)
-        for i in range(len(img_rgb[0])):
-            for j in range(len(img_rgb[0][0])):
-                grey_img[i][j] = (54 * img_rgb[0] + 183 * img_rgb[1] + 19 * img_rgb[2]) / 256
-        return grey_img
-    def compute_bitmap(grey_img):
-        threshold = np.median(grey_img)
-        tb, eb = np.zeros(grey_img.shape), np.zeros(grey_img.shape)
-        for i in range(len(grey_img)):
-            for j in range(len(grey_img[0])):
-                if(abs(grey_img[i][j] - threshold) < 10):
-                    eb[i][j] = 0
-                if(grey_img[i][j] > threshold):
-                    tb[i][j] = 1
-        return tb, eb
-    def GetExpShift(img1, img2, shift_count):
-        # min_err, cur_shift[2]
-        tb1, eb1 = compute_bitmap(img1)
-        tb2, eb2 = compute_bitmap(img2)
-        if(shift_count > 0):
-            sml_img1 = cv2.resize(img1, (0,0), fx=0.5, fy=0.5) 
-            sml_img2 = cv2.resize(img2, (0,0), fx=0.5, fy=0.5)
-            cur_shift = GetExpShift(sml_img1, sml_img2, shift_bits - 1)
-            cur_shift[0] *= 2
-            cur_shift[1] *= 2
-        else
-            cur_shift[0] = cur_shift[1] = 0
-        min_err = len(img1) * len(img1[0])
-        for i in range(len(img1)):
-            for j in range(len(img1[0])):
-                xs = cur_shift[0] + i;
-                ys = cur_shift[1] + j;
-                Bitmap diff_b;
-                int err;
-                shifted_tb2 = np.zeros(img1.shape)
-                shifted_eb2 = np.zeros(img1.shape)
-                M = np.float32([[1,0, xs],[0,1,ys]])
-                shifted_tb2 = cv2.warpAffine(tb2 ,M, img1.shape)
-                shifted_eb2 = cv2.warpAffine(eb2 ,M, img1.shape)
-                
-                diff_b = np.logical_xor(tb1, shifted_tb2)
-                diff_b = np.logical_and(diff_b, eb1)
-                diff_b = np.logical_and(diff_b, shifted_eb2)
-                err = np.sum(diff_b);
-                if (err < min_err) {
-                      shift_ret[0] = xs;
-                      shift_ret[1] = ys;
-                      min_err = err;
-                }
-        return shift_ret
-
-
-# In[4]:
-
-
-def compute_greyvalue(img_rgb):
-        grey_img = np.zeros(img_rgb[0].shape)
-        for i in range(len(img_rgb[0])):
-            for j in range(len(img_rgb[0][0])):
-                grey_img[i][j] = (54 * img_rgb[0][i][j] + 183 * img_rgb[1][i][j] + 19 * img_rgb[2][i][j]) / 256
-        return grey_img
-def compute_bitmap(grey_img):
-        threshold = np.median(grey_img)
-        tb, eb = np.zeros(grey_img.shape), np.zeros(grey_img.shape)
-        for i in range(len(grey_img)):
-            for j in range(len(grey_img[0])):
-                if(abs(grey_img[i][j] - threshold) < 10):
-                    eb[i][j] = 0
-                if(grey_img[i][j] > threshold):
-                    tb[i][j] = 1
-        return tb, eb
-def GetExpShift(img1, img2, shift_count, shift_offset):
-        int min_err;
-        int cur_shift[2];
-        Bitmap tb1, tb2;
-        Bitmap eb1, eb2;
-        int i, j;
-images, images_rgb = readImages("testing_images/living_room_images")
-test = compute_greyvalue([images_rgb[0][0], images_rgb[1][0], images_rgb[2][0]])
-test1, test2 = compute_bitmap(test)
-plt.imshow(test1, cmap = "gray")
-
 
 # In[183]:
 
@@ -186,7 +97,7 @@ def intensityAdjustment(image, template):
 # In[149]:
 
 
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm as tqdm
 def radiance_map_1c(images_1c, shutter_times, response_curve, weighting_function):
     images = images_1c;
     rad_map = np.zeros(images[0].shape);
@@ -324,7 +235,7 @@ def bilateral_func(input_image):
         return denoised_intensity
         #print(output_image[x, y])
     
-    fig, axes = plt.subplots(2, 2, figsize=(15, 15))
+    # fig, axes = plt.subplots(2, 2, figsize=(15, 15))
 
     R = input_image[0]
     G = input_image[2]
@@ -332,7 +243,7 @@ def bilateral_func(input_image):
     #intensity = 1/61 * (20 * R + 40 * G + B)
     intensity = 0.2126 * R + 0.7152 * G + 0.0722 * B
     print('intensity array ', intensity)
-    axes[0][0].imshow(Image.fromarray(intensity))
+    # axes[0][0].imshow(Image.fromarray(intensity))
     r = R / intensity
     g = G / intensity
     b = B / intensity
@@ -341,8 +252,8 @@ def bilateral_func(input_image):
     log_detail = log_intensity - log_base
     print('base array',log_base)
     print('detail array',log_detail)
-    axes[0][1].imshow(Image.fromarray(np.exp(log_base)))
-    axes[1][0].imshow(Image.fromarray(np.exp(log_detail)))
+    # axes[0][1].imshow(Image.fromarray(np.exp(log_base)))
+    # axes[1][0].imshow(Image.fromarray(np.exp(log_detail)))
     targetContrast = np.log10(5)
     tragetContrast = 20
     compressionfactor = targetContrast / (np.max(log_base) - np.min(log_base))
@@ -351,12 +262,12 @@ def bilateral_func(input_image):
     log_abs_scale = np.max(log_base) * compressionfactor
     print('log absolute scale', log_abs_scale)
     log_output = log_base * compressionfactor + log_detail# - log_abs_scale
-    axes[1][1].imshow(Image.fromarray(np.exp(log_output)), cmap = "spring")
+    # axes[1][1].imshow(Image.fromarray(np.exp(log_output)), cmap = "spring")
     print('log output', log_output)
     R_out = r * np.exp(log_output)
     G_out = g * np.exp(log_output)
     B_out = b * np.exp(log_output)
-    plt.show()
+    # plt.show()
     return [R_out, B_out, G_out]#np.concatenate((R_out, G_out, B_out), axis = 2)
 
 
@@ -378,7 +289,8 @@ def CreateHdrImage(images_rgb, MAX_intensity, shutter_times, WeightedIntensity, 
         plt.plot(curve)
     plt.legend()
     plt.title("Response Curve")
-    plt.show()
+    plt.savefig("result_images/RCurve1.png")
+    # plt.show()
     # Calculate Radiance Map if RadMap is an empty list
     if len(RadMap) == 0:
         RadMap = list(map(radiance_map_1c, images_rgb, [shutter_times] * 3, RespCurve, [WeightedIntensity] * 3))
@@ -416,7 +328,7 @@ def CreateHdrImage(images_rgb, MAX_intensity, shutter_times, WeightedIntensity, 
 
 if __name__ == "__main__":
     images, images_rgb = readImages("testing_images/View1")
-    show_images(images)
+    # show_images(images)
     # living_room_times = np.array([1/160, 1/125, 1/80, 1/60, 1/40, 1/15], dtype = float)
     view_2_times = np.array([1, 10, 15, 1 / 10, 1 / 25, 
                              1 / 5, 1 / 50, 2.5, 20, 5])
@@ -435,13 +347,13 @@ if __name__ == "__main__":
                                    shutter_times = np.log(view_1_times),#test_times[-10: -1], 
                                    WeightedIntensity = intensity_weighting, 
                                    ToneMappingFunction = gammaToneMapping, 
-                                   RadMap = RadianceMap
+                                   RadMap = []
                                 )
     for i in tqdm(range(len(result_image))):
         for j in range(len(result_image[0])):
             if(result_image[i][j][0] > 230):
                 result_image[i][j][1]  = result_image[i][j][2] = result_image[i][j][0]
-    cv2.imwrite("result_images/view 1 255 tone mapping.png", result_image)
+    cv2.imwrite("result_images/View1NormalSize.png", result_image)
 
 
 # In[55]:
@@ -459,8 +371,8 @@ plt.imshow(RadianceMap[0],
            origin="lower", cmap='autumn', interpolation='nearest')
 plt.gca().invert_yaxis()
 plt.colorbar()
-plt.savefig("result_images/Rmap2.png")
-plt.show()
+plt.savefig("result_images/Rmap1.png")
+# plt.show()
 
 
 # In[196]:
